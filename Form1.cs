@@ -24,13 +24,14 @@ namespace HW14_Dimaculangan {
             
         }
 
-        public static string [] ArrDict => File.ReadAllLines("wordsEn.txt");
+        public static string [] ArrDict => File.ReadAllLines(@"wordsEn.txt");
 
         public Trie Root = new Trie();
         //now let's build the trienodes wit childs:
         public class TrieNode {
             public char C;
             public List<TrieNode> Child = new List<TrieNode>();
+            
             //constructors:
             public TrieNode() {
                 C = new char();
@@ -72,13 +73,13 @@ namespace HW14_Dimaculangan {
         public class Trie {
             private readonly TrieNode _root = new TrieNode('\0');
             //public TrieNode CurNode = new TrieNode();
-            public List<string> prefixes = new List<string>();
-            public string prefix = null;
+            public List<string> Prefixes = new List<string>();
+            public string Prefix = null;
 
-            public void addString(string S) {
+            public void AddString(string s) {
                 TrieNode n = new TrieNode();
                 n = _root;
-                foreach (char sc in S) {
+                foreach (char sc in s) {
                     n = n.AddOrGet(sc);
                 }
                 n = n.AddOrGet('\0');
@@ -88,13 +89,13 @@ namespace HW14_Dimaculangan {
             public void BuildDictTrie() {
                 foreach (string s in ArrDict) {
                     //build the trie by adding all strings:
-                    addString(s);
+                    AddString(s);
                 }
             }
 
             
             //grabs the prefixNode:
-            public TrieNode PrefixNode(string s) {
+            public TrieNode PrefixNode(string s){
                 
                 //Have a temporary prefix node variable and we always starting at root
                 var prefNode = _root;
@@ -102,78 +103,58 @@ namespace HW14_Dimaculangan {
                 var res = prefNode;
                 foreach (var c in s) {
                     prefNode = prefNode.FindChildNode(c);
-                    //if the next one is null, just end it and return the prior one
+                    res = prefNode;
+                    //if the next one is null, just end it
                     if (prefNode == null) {
                         break;
                     }
-                    //prefix += c;
-                    res = prefNode;
                 }
+                
                 return res;
             }
 
-            public void getPrefixes(string origs, TrieNode node) {
+            public void GetPrefixes(string origs, TrieNode node) {
                 //clear lists:
-                prefixes.Clear();
+                Prefixes.Clear();
+                if (node == null) { //no such word
+                    return;
+                }
                 //this kills the program:
                 if (string.IsNullOrEmpty(origs)) {
                     return;
                 }
                 foreach (var n in node.Child) {
-                    BuildPrefix(origs,n.C + "", n);
+                    BuildPrefix(origs, n.C + "", n);
+                    
                 }
+                
             }
             //grabs the string from input box and returns all the matching prefix
             public void BuildPrefix(string origs, string s, TrieNode childNode) {
                 //we will be adding a suffixing string:
                 //if the one has nothing in it, return;
-                
-                
                 if (childNode.C == '\0') {
                     var fullword = origs + s;
-                    prefixes.Add(fullword.Substring(0,fullword.Length-1));
+                    Prefixes.Add(fullword.Substring(0,fullword.Length-1));
                     return;
                 }
                 //go through each child:
                 foreach (TrieNode cnode in childNode.Child) {
                     //go through each until they find a '\0; 
                     //add that character until that '\0 is found;
-                        BuildPrefix(origs,s+cnode.C,cnode);
+                        BuildPrefix(origs, s + cnode.C, cnode);
                 }
             }
         }
 
-        public void disableResultBox() {
-            ResultBox.Enabled = false;
-        }
 
-        private void PrefixInputBox_TextChanged (object sender, EventArgs e) {
-            
-        }
-
-        private void LoadButton_Click (object sender, EventArgs e) {
-            //disable result box and clear it.
-            disableResultBox();
-            ResultBox.Clear();
-            Root.prefixes.Clear();
-            //hella slow so i created threads for functions:
-            //ThreadStart getPrefs =
-            //    delegate { Root.getPrefixes(PrefixInputBox.Text, Root.PrefixNode(PrefixInputBox.Text)); };
-            //Thread preffixThread = new Thread(getPrefs);
-            Root.getPrefixes(PrefixInputBox.Text, Root.PrefixNode(PrefixInputBox.Text));
-            ThreadStart resultboxthreadstart = delegate {
-                foreach (string s in Root.prefixes) {
-                    ResultBox.Text += s + "\r\n";
-                }
-                IAsyncResult res = this.BeginInvoke(new Action(delegate { ResultBox.Enabled = true; }));
-            };
-            Thread resultThread = new Thread(resultboxthreadstart);
-            resultThread.Start();
-
-            //Root.getPrefixes(PrefixInputBox.Text, Root.PrefixNode(PrefixInputBox.Text));
-            //foreach (string s in Root.prefixes) {
-            //    ResultBox.Text += s + "\r\n";
-            //}
+        private void PrefixInputBox_TextChanged(object sender, EventArgs e) {
+            //clear the prefixes and listbox items.
+            Root.Prefixes.Clear();
+            listBox1.Items.Clear();
+            //grab the trie and everythign below it from the text change
+            Root.GetPrefixes(PrefixInputBox.Text, Root.PrefixNode(PrefixInputBox.Text));
+            listBox1.Items.AddRange(Root.Prefixes.ToArray());
         }
     }
 }
